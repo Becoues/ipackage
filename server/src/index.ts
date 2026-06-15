@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import type { Response } from "express";
 import { loadConfig, usingExampleConfig } from "./config";
-import { refresh, store } from "./checker";
+import { refresh, store, effectiveCommand } from "./checker";
 import { buildChangelog } from "./changelog";
 import { spawnOn, runOn } from "./ssh";
 import { discoverSshHosts } from "./sshConfig";
@@ -115,6 +115,10 @@ app.post("/api/packages", (req, res) => {
         versionCommand: p.versionCommand.trim(),
         versionRegex: p.versionRegex?.trim() || undefined,
         updateCommand: p.updateCommand.trim(),
+        machineOverrides:
+          p.machineOverrides && typeof p.machineOverrides === "object"
+            ? p.machineOverrides
+            : undefined,
       });
     }
     savePackages(packages);
@@ -211,8 +215,9 @@ function streamUpdate(
   pkg: PackageDef
 ): Promise<void> {
   return new Promise((resolve) => {
-    writeLine(res, { type: "start", machine: host, packageId: pkg.id, command: pkg.updateCommand });
-    const child = spawnOn(host, pkg.updateCommand);
+    const updateCommand = effectiveCommand(pkg, host, "updateCommand");
+    writeLine(res, { type: "start", machine: host, packageId: pkg.id, command: updateCommand });
+    const child = spawnOn(host, updateCommand);
     const timer = setTimeout(() => child.kill("SIGKILL"), 600000);
     child.stdout.on("data", (d) =>
       writeLine(res, { type: "log", stream: "out", text: d.toString() })
@@ -229,7 +234,7 @@ function streamUpdate(
       // 更新后重新查一次该包版本
       let installed: string | null = null;
       try {
-        const r = await runOn(host, pkg.versionCommand, 20000);
+        const r = await runOn(host, effectiveCommand(pkg, host, "versionCommand"), 20000);
         const re = pkg.versionRegex ? new RegExp(pkg.versionRegex) : /(\d+\.\d+\.\d+[\w.-]*)/;
         const m = (r.stdout + "\n" + r.stderr).match(re);
         installed = m ? m[1] || m[0] : null;

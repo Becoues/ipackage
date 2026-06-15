@@ -17,6 +17,11 @@ export interface PackageDef {
   versionCommand: string;
   versionRegex?: string;
   updateCommand: string;
+  // 按机器覆盖命令（key=机器 host）。某机器需要不同的查版本/更新命令时用，如本机 sudo。
+  machineOverrides?: Record<
+    string,
+    { versionCommand?: string; updateCommand?: string }
+  >;
   source?: "config" | "ui";
 }
 

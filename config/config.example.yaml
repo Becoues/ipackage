@@ -26,9 +26,17 @@ packages:
   - id: lark-cli
     label: Lark CLI
     manager: npm
-    npmName: "@larksuiteoapi/lark-cli"   # 按你实际的包名改
-    versionCommand: "lark --version"
-    updateCommand: "npm i -g @larksuiteoapi/lark-cli@latest"
+    npmName: "@larksuite/cli"             # npm 上的实际包名
+    repo: larksuite/cli
+    versionCommand: "lark-cli --version"  # 二进制名是 lark-cli
+    updateCommand: "lark-cli update"      # 自更新，保留已授权配置，不直接覆盖
+    # machineOverrides：按机器 host 覆盖命令（可选）。例：
+    # machineOverrides:
+    #   some-host:
+    #     updateCommand: "..."
+    # 提示：若本机 npm 全局目录归 root（更新报 EACCES），推荐一次性把目录改成自己所有，
+    # 之后所有包在本机更新都无需 sudo：
+    #   sudo chown -R $(whoami) /usr/local/lib/node_modules /usr/local/bin
 
   - id: ncu
     label: npm-check-updates

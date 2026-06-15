@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1c2433"/>
+      <stop offset="1" stop-color="#0b0d12"/>
+    </linearGradient>
+    <linearGradient id="top" x1="7" y1="9" x2="23" y2="17" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#82baff"/>
+      <stop offset="1" stop-color="#5a9bff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 深色圆角底，亮色徽标在浅色/深色标签栏都醒目 -->
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#39414f" stroke-width="1"/>
+
+  <!-- 等距包裹盒（三面明暗，一眼是“包”） -->
+  <g stroke="#0b0d12" stroke-width="0.7" stroke-linejoin="round">
+    <polygon points="15,8.5 23,12.7 15,16.9 7,12.7" fill="url(#top)"/>
+    <polygon points="23,12.7 23,22 15,26.2 15,16.9" fill="#3470d6"/>
+    <polygon points="7,12.7 15,16.9 15,26.2 7,22" fill="#27569f"/>
+  </g>
+  <!-- 顶面封箱缝 -->
+  <line x1="15" y1="16.9" x2="15" y2="8.5" stroke="#bcd8ff" stroke-width="0.7" opacity="0.55"/>
+
+  <!-- 右上“可更新”绿色发光徽标 + 上箭头 -->
+  <circle cx="24" cy="8.5" r="8.6" fill="#2ee06a" opacity="0.18"/>
+  <circle cx="24" cy="8.5" r="6.2" fill="#2ee06a" stroke="#0b0d12" stroke-width="1.3"/>
+  <path d="M24 4.6 L27.2 8.2 H25.3 V11.9 H22.7 V8.2 H20.8 Z" fill="#07210f"/>
+</svg>

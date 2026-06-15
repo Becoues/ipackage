@@ -47,6 +47,15 @@ async function pmap<T, R>(items: T[], limit: number, fn: (x: T) => Promise<R>): 
   return out;
 }
 
+/** 解析某机器上该包应执行的命令：优先 machineOverrides[host]，否则用包级默认。 */
+export function effectiveCommand(
+  pkg: PackageDef,
+  host: string,
+  field: "versionCommand" | "updateCommand"
+): string {
+  return pkg.machineOverrides?.[host]?.[field] ?? pkg[field];
+}
+
 function parseInstalled(raw: string, pkg: PackageDef): string | null {
   const re = pkg.versionRegex ? new RegExp(pkg.versionRegex) : DEFAULT_REGEX;
   const m = raw.match(re);
@@ -109,7 +118,7 @@ export async function refresh(cfg: AppConfig, opts: RefreshOpts = {}): Promise<C
         checkedAt: new Date().toISOString(),
       };
       try {
-        const r = await runOn(m.host, pkg.versionCommand, 20000);
+        const r = await runOn(m.host, effectiveCommand(pkg, m.host, "versionCommand"), 20000);
         if (r.timedOut) {
           cell.status = "unknown";
           cell.error = "查询超时";

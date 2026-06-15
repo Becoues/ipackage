@@ -71,6 +71,11 @@ export default function App() {
 
   const outdatedCount = cells.filter((c) => c.status === "outdated").length;
 
+  // 标签页标题带上可更新数量，配合 favicon 更易一眼定位 + 看状态
+  useEffect(() => {
+    document.title = `${outdatedCount ? `(${outdatedCount}) ` : ""}📦 ipackage`;
+  }, [outdatedCount]);
+
   useEffect(() => {
     (async () => {
       try {

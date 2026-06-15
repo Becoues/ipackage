@@ -102,6 +102,7 @@ packages:
 | `versionRegex` | 从命令输出里提取版本号，默认 `(\d+\.\d+\.\d+[\w.-]*)` |
 | `updateCommand` | 点更新时在目标机器上执行的命令 |
 | `repo` | `owner/name`，用于抓 changelog（及 github manager 查最新版） |
+| `machineOverrides` | 按机器 `host` 覆盖 `versionCommand`/`updateCommand`，如本机需 `sudo`：`machineOverrides.local.updateCommand: "sudo …"`（sudo 需免密，否则非交互执行会卡密码） |
 
 ## 前置条件
 

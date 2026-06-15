@@ -15,6 +15,10 @@ export interface PackageDef {
   versionCommand: string;
   versionRegex?: string;
   updateCommand: string;
+  machineOverrides?: Record<
+    string,
+    { versionCommand?: string; updateCommand?: string }
+  >;
   source?: "config" | "ui";
 }
 

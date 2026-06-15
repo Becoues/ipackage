@@ -62,8 +62,12 @@
   versionRegex?: string;      // 提取版本号，默认 (\d+\.\d+\.\d+\S*)
   // 更新用（在目标机器上执行）：
   updateCommand: string;      // 如 "npm i -g @anthropic-ai/claude-code@latest"
+  // 按机器覆盖命令（key=机器 host）：某机器需不同命令时用，如本机 sudo：
+  machineOverrides?: Record<string, { versionCommand?: string; updateCommand?: string }>;
 }
 ```
+
+命令解析：执行某机器上的查版本/更新时，先取 `machineOverrides[host]` 里对应命令，没有再回退包级默认（`effectiveCommand()`）。
 
 ### 运行期状态 Cell（机器 × 包）
 ```ts

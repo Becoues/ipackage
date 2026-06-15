@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+config/config.yaml
+data/
+*.log
+.DS_Store

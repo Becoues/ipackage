@@ -1,0 +1,56 @@
+# ipackage 配置。复制为 config/config.yaml 后按需修改。
+#
+# machines.host 取值：
+#   - "local"        => 在本机直接执行命令
+#   - "<ssh别名>"    => 复用 ~/.ssh/config 里的 Host（推荐，跳板机/密钥自动生效）
+#   - "user@1.2.3.4" => 直连
+# 需提前配置好免密（密钥/ssh-agent），不支持交互式密码。
+
+machines:
+  - { name: 本机, host: local }
+  - { name: 阿里开发机, host: ali-dev }
+  - { name: k8s, host: k8s }
+  - { name: macmini, host: macmini }
+  # - { name: data(AWS), host: data }
+  # - { name: srv80-27, host: srv80-27, enabled: false }
+
+packages:
+  - id: claude-code
+    label: Claude Code CLI
+    manager: npm
+    npmName: "@anthropic-ai/claude-code"
+    repo: anthropics/claude-code
+    versionCommand: "claude --version"
+    updateCommand: "npm i -g @anthropic-ai/claude-code@latest"
+
+  - id: lark-cli
+    label: Lark CLI
+    manager: npm
+    npmName: "@larksuiteoapi/lark-cli"   # 按你实际的包名改
+    versionCommand: "lark --version"
+    updateCommand: "npm i -g @larksuiteoapi/lark-cli@latest"
+
+  - id: ncu
+    label: npm-check-updates
+    manager: npm
+    npmName: "npm-check-updates"
+    repo: raineorshine/npm-check-updates
+    versionCommand: "ncu --version"
+    updateCommand: "npm i -g npm-check-updates@latest"
+
+  # PyPI 示例：
+  # - id: uv
+  #   label: uv
+  #   manager: pypi
+  #   pypiName: uv
+  #   repo: astral-sh/uv
+  #   versionCommand: "uv --version"
+  #   updateCommand: "pip install -U uv"
+
+  # GitHub Release 示例（非包管理器分发的二进制）：
+  # - id: gh
+  #   label: GitHub CLI
+  #   manager: github
+  #   repo: cli/cli
+  #   versionCommand: "gh --version"
+  #   updateCommand: "brew upgrade gh"

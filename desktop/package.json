@@ -1,0 +1,23 @@
+{
+  "name": "ipackage-desktop",
+  "productName": "ipackage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ipackage 的 macOS 桌面壳（Electron，内嵌后端）",
+  "main": "main.cjs",
+  "scripts": {
+    "build:server": "esbuild ../server/src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=build/server.cjs --log-level=warning",
+    "prepare:assets": "node scripts/prepare-assets.cjs",
+    "build": "npm run build:server && npm run prepare:assets",
+    "start": "electron .",
+    "dev": "npm run build && electron .",
+    "icon": "bash scripts/make-icon.sh",
+    "dist": "npm run build && node scripts/package.cjs",
+    "dist:share": "npm run build:server && IPACKAGE_SHARE=1 node scripts/prepare-assets.cjs && IPACKAGE_SHARE=1 node scripts/package.cjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.0.0",
+    "esbuild": "^0.28.2"
+  }
+}

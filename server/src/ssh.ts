@@ -11,6 +11,8 @@ const SSH_OPTS = [
   "ConnectTimeout=15",
   "-o",
   "StrictHostKeyChecking=accept-new",
+  "-o",
+  "LogLevel=ERROR", // 屏蔽 post-quantum 等 banner 警告，否则会混进 stderr 被当成错误信息展示
 ];
 
 /**

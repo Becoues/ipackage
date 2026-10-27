@@ -56,13 +56,13 @@ export function effectiveCommand(
   return pkg.machineOverrides?.[host]?.[field] ?? pkg[field];
 }
 
-function parseInstalled(raw: string, pkg: PackageDef): string | null {
+export function parseInstalled(raw: string, pkg: PackageDef): string | null {
   const re = pkg.versionRegex ? new RegExp(pkg.versionRegex) : DEFAULT_REGEX;
   const m = raw.match(re);
   return m ? m[1] || m[0] : null;
 }
 
-function compare(installed: string | null, latest: string | null): Cell["status"] {
+export function compare(installed: string | null, latest: string | null): Cell["status"] {
   if (!installed) return "missing";
   if (!latest) return "unknown";
   const ci = semver.coerce(installed);
@@ -87,11 +87,13 @@ export async function refresh(cfg: AppConfig, opts: RefreshOpts = {}): Promise<C
 
   // 1) 每个包查一次最新版本（并发）
   const latestMap = new Map<string, string | null>();
+  const latestErr = new Map<string, string>(); // 查最新版失败的原因，透出到 cell.error
   await pmap(packages, 6, async (pkg) => {
     try {
       latestMap.set(pkg.id, await fetchLatest(pkg));
-    } catch {
+    } catch (e) {
       latestMap.set(pkg.id, null);
+      latestErr.set(pkg.id, `查最新版失败：${(e as Error).message}`.slice(0, 200));
     }
   });
 
@@ -126,11 +128,13 @@ export async function refresh(cfg: AppConfig, opts: RefreshOpts = {}): Promise<C
           // 命令失败且无输出 => 视为未安装
           cell.installed = null;
           cell.status = "missing";
-          cell.error = r.stderr.trim().slice(0, 200) || `exit ${r.code}`;
+          // 取 stderr 最后一行：远程登录脚本的噪音（bashrc 警告等）在前，真正原因通常在末尾
+          cell.error = r.stderr.trim().split("\n").pop()?.slice(0, 200) || `exit ${r.code}`;
         } else {
           cell.installed = parseInstalled(r.stdout + "\n" + r.stderr, pkg);
           cell.status = compare(cell.installed, latest);
           if (!cell.installed) cell.error = "无法从输出解析版本号";
+          else if (!latest) cell.error = latestErr.get(pkg.id);
         }
       } catch (e) {
         cell.status = "unknown";

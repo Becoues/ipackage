@@ -4,9 +4,8 @@ import type {
   ConfigResp,
   Machine,
   PackageDef,
-  SettingsResp,
   SshHost,
-  TestConnResp,
+  UpdateMsg,
 } from "./types";
 
 export async function getConfig(): Promise<ConfigResp> {
@@ -92,47 +91,11 @@ export async function savePackages(packages: PackageDef[]): Promise<PackageDef[]
   return d.packages || [];
 }
 
-export async function getSettings(): Promise<SettingsResp> {
-  const r = await fetch("/api/settings");
-  if (!r.ok) throw new Error("加载设置失败");
-  return r.json();
-}
-
-export async function saveSettings(body: {
-  apiKey?: string;
-  baseUrl?: string;
-  models?: string[];
-}): Promise<SettingsResp> {
-  const r = await fetch("/api/settings", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) {
-    const e = await r.json().catch(() => ({}));
-    throw new Error(e.error || "保存失败");
-  }
-  return r.json();
-}
-
-export async function testConnection(body: {
-  apiKey?: string;
-  baseUrl?: string;
-  models?: string[];
-}): Promise<TestConnResp> {
-  const r = await fetch("/api/settings/test-connection", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return r.json();
-}
-
 /** 流式更新：逐行回调 NDJSON 对象 */
 export async function streamUpdate(
   path: "/api/update" | "/api/update-all",
-  body: any,
-  onMsg: (msg: any) => void
+  body: { machine?: string; packageId?: string; targets?: { machine: string; packageId: string }[] },
+  onMsg: (msg: UpdateMsg) => void
 ): Promise<void> {
   const r = await fetch(path, {
     method: "POST",

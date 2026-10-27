@@ -8,7 +8,14 @@ async function getJson(url: string): Promise<any> {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
   const res = await fetch(url, { headers });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} @ ${url}`);
+  if (!res.ok) {
+    // 私有仓库无 token 时 GitHub 返回 404 而不是 401，容易误判成“没有 release”
+    const hint =
+      res.status === 404 && url.includes("api.github.com") && !process.env.GITHUB_TOKEN
+        ? "（私有仓库需配置 GITHUB_TOKEN）"
+        : "";
+    throw new Error(`${res.status} ${res.statusText} @ ${url}${hint}`);
+  }
   return res.json();
 }
 

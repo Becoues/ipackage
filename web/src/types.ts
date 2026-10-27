@@ -50,7 +50,6 @@ export interface ConfigResp {
   machines: Machine[];
   packages: PackageDef[];
   usingExampleConfig: boolean;
-  aiEnabled: boolean;
 }
 
 export interface ReleaseNote {
@@ -58,26 +57,19 @@ export interface ReleaseNote {
   name: string;
   body: string;
   url: string;
+  date?: string;
 }
 
 export interface ChangelogResp {
-  summary: string;
-  aiEnabled: boolean;
-  model?: string;
   releases: ReleaseNote[];
+  inRange: boolean; // false = 区间内没匹配到，退化为最近 5 个
   note?: string;
 }
 
-export interface SettingsResp {
-  baseUrl: string;
-  models: string[];
-  apiKey: string; // 脱敏
-  hasKey: boolean;
-  keyFromEnv: boolean;
-}
-
-export interface TestConnResp {
-  ok: boolean;
-  model?: string;
-  error?: string;
-}
+/** /api/update(-all) 流式返回的 NDJSON 消息 */
+export type UpdateMsg =
+  | { type: "plan"; count: number }
+  | { type: "start"; machine: string; packageId: string; command: string }
+  | { type: "log"; stream: "out" | "err"; text: string }
+  | { type: "done"; machine: string; packageId: string; code: number | null; installed: string | null }
+  | { type: "all-done" };

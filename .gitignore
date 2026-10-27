@@ -5,3 +5,8 @@ config/config.yaml
 data/
 *.log
 .DS_Store
+
+# Mac App（Electron）
+desktop/node_modules/
+desktop/build/
+desktop/out/

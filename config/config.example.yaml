@@ -38,6 +38,45 @@ packages:
     # 之后所有包在本机更新都无需 sudo：
     #   sudo chown -R $(whoami) /usr/local/lib/node_modules /usr/local/bin
 
+  - id: codex
+    label: Codex CLI
+    manager: npm
+    npmName: "@openai/codex"
+    repo: openai/codex
+    versionCommand: "codex --version"
+    updateCommand: "codex update"   # standalone 安装自更新；npm 装的机器可 override 成 npm i -g
+
+  - id: muninn
+    label: Muninn
+    manager: github
+    repo: vast-enterprise/muninn   # 私有仓库，查最新版需要 GITHUB_TOKEN（见 .env.example）
+    # 非 pip 安装：git clone + install.sh，clone 路径因机器而异。
+    # 从 ~/.muninn/recall wrapper 里反解出 clone 路径，再读 __version__。
+    # 找不到 wrapper 时明确报“未安装”，而不是 sed 读空路径报错。
+    versionCommand: >-
+      REPO=$(sed -n 's|.*PYTHONPATH="\(.*\)/client".*|\1|p' ~/.muninn/recall 2>/dev/null | head -1);
+      [ -n "$REPO" ] || { echo "未安装 muninn（找不到 ~/.muninn/recall）" >&2; exit 1; };
+      sed -n 's/^__version__ = "\(.*\)"/\1/p' "$REPO/client/muninn/__init__.py"
+    updateCommand: >-
+      REPO=$(sed -n 's|.*PYTHONPATH="\(.*\)/client".*|\1|p' ~/.muninn/recall 2>/dev/null | head -1);
+      [ -n "$REPO" ] || { echo "未安装 muninn（找不到 ~/.muninn/recall）" >&2; exit 1; };
+      make -C "$REPO" update
+
+  - id: herdr
+    label: Herdr
+    manager: github
+    repo: herdrdev/herdr            # https://herdr.dev ，GitHub releases/latest 即 stable 通道
+    # install.sh 装到 ~/.local/bin，非交互 shell 未必在 PATH 里，显式补上
+    versionCommand: 'PATH="$HOME/.local/bin:$PATH" herdr --version'
+    updateCommand: 'PATH="$HOME/.local/bin:$PATH" herdr update'
+
+  - id: magpie
+    label: Magpie
+    manager: github
+    repo: yetone/magpie             # https://usemagpie.ai ，版本号形如 0.1.1734
+    versionCommand: 'PATH="$HOME/.local/bin:$PATH" magpie --version'
+    updateCommand: 'PATH="$HOME/.local/bin:$PATH" magpie update'
+
   - id: ncu
     label: npm-check-updates
     manager: npm

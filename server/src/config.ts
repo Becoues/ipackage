@@ -5,8 +5,11 @@ import type { AppConfig, Machine, PackageDef } from "./types";
 import { loadOverrides } from "./overrides";
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const CONFIG_PATH = path.join(ROOT, "config", "config.yaml");
-const EXAMPLE_PATH = path.join(ROOT, "config", "config.example.yaml");
+// 配置目录与示例配置路径可由环境变量覆盖（Mac App 指向 userData），默认仍是仓库 config/。
+const CONFIG_DIR = process.env.IPACKAGE_CONFIG_DIR || path.join(ROOT, "config");
+const CONFIG_PATH = path.join(CONFIG_DIR, "config.yaml");
+const EXAMPLE_PATH =
+  process.env.IPACKAGE_EXAMPLE_CONFIG || path.join(ROOT, "config", "config.example.yaml");
 
 const LOCAL: Machine = { name: "本机", host: "local", enabled: true };
 

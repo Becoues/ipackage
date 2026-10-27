@@ -1,0 +1,53 @@
+# ipackage 分享版的默认配置（首次启动时拷到 ~/Library/Application Support/ipackage/config/config.yaml）。
+# 只带本机 + 公开包；其它机器请在 App 左下角「管理机器」里从 ~/.ssh/config 发现并加入，
+# 包也可在「管理包」里增删，或直接编辑上面那个 config.yaml。
+
+machines:
+  - { name: 本机, host: local }
+
+packages:
+  - id: claude-code
+    label: Claude Code CLI
+    manager: npm
+    npmName: "@anthropic-ai/claude-code"
+    repo: anthropics/claude-code
+    versionCommand: "claude --version"
+    updateCommand: "npm i -g @anthropic-ai/claude-code@latest"
+
+  - id: codex
+    label: Codex CLI
+    manager: npm
+    npmName: "@openai/codex"
+    repo: openai/codex
+    versionCommand: "codex --version"
+    updateCommand: "npm i -g @openai/codex@latest"
+
+  - id: lark-cli
+    label: Lark CLI
+    manager: npm
+    npmName: "@larksuite/cli"
+    repo: larksuite/cli
+    versionCommand: "lark-cli --version"
+    updateCommand: "lark-cli update"
+
+  - id: herdr
+    label: Herdr
+    manager: github
+    repo: herdrdev/herdr
+    versionCommand: 'PATH="$HOME/.local/bin:$PATH" herdr --version'
+    updateCommand: 'PATH="$HOME/.local/bin:$PATH" herdr update'
+
+  - id: magpie
+    label: Magpie
+    manager: github
+    repo: yetone/magpie
+    versionCommand: 'PATH="$HOME/.local/bin:$PATH" magpie --version'
+    updateCommand: 'PATH="$HOME/.local/bin:$PATH" magpie update'
+
+  - id: ncu
+    label: npm-check-updates
+    manager: npm
+    npmName: "npm-check-updates"
+    repo: raineorshine/npm-check-updates
+    versionCommand: "ncu --version"
+    updateCommand: "npm i -g npm-check-updates@latest"

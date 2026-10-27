@@ -8,12 +8,12 @@ services:
       - "127.0.0.1:8787:8787"
     environment:
       - IPACKAGE_DATA_DIR=/app/data
-      # 也可在这里给 Key，但更推荐在网页「设置」里填（会持久化到 data 卷）：
-      # - DEERAPI_API_KEY=sk-xxxx
+      # 查私有仓库 Release（muninn）用；compose 自动读同目录 .env
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     volumes:
       # 机器与包配置：直接编辑宿主上的 config/config.yaml 即生效
       - ./config:/app/config
-      # 持久化：DeerAPI Key、baseUrl、模型降级链都存这里，重启不丢
+      # 持久化：网页里对机器/包的改动（overrides.json）存这里，重启不丢
       - ipackage-data:/app/data
       # 复用宿主 SSH（配置/密钥/known_hosts）。
       # 注意：OpenSSH 按系统用户库（getpwuid）找 home，容器内 root 即 /root，

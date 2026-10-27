@@ -1,16 +1,17 @@
 # 📦 ipackage
 
-多机 CLI 包版本监控与一键更新面板。在一个本地网页里看清**本机 + 各 SSH 开发机**上指定包（Claude Code CLI、Lark CLI…）的**已装版本 vs 最新版本**，用 **AI 总结**更新了什么，并**按机器/按包勾选更新**或**一键更新所有落后包**。
+多机 CLI 包版本监控与一键更新面板。在一个本地网页里看清**本机 + 各 SSH 开发机**上指定包（Claude Code CLI、Lark CLI…）的**已装版本 vs 最新版本**，查看两版之间的 **Release 更新内容**，并**按机器/按包勾选更新**或**一键更新所有落后包**。
 
 > 设计细节见 [DESIGN.md](./DESIGN.md)。
 
 ## 核心特性
 
 - 🖥️ **多机**：复用你现成的 `~/.ssh/config`（别名、跳板机 ProxyJump、密钥、ssh-agent 全自动），无需在工具里另配密钥。顶部「🖥️ 机器」可**从 `~/.ssh/config` 一键发现别名 → 勾选加入 / 启用停用**，本机（local）固定保留。
-- 🔢 **版本矩阵**：行=包、列=机器，配色一眼看出谁落后（绿=最新 / 橙=可更新 / 灰=未装 / 红=未知）。
-- 🤖 **AI changelog**：点包名，自动抓 GitHub Releases 区间并总结「新功能 / 破坏性变更 / 修复 / 是否建议升级」。走 **DeerAPI**（OpenAI 兼容网关），**Key 在网页里设置并持久化**，模型**降级链** `gpt-5.5 → gpt-5.4 → gemini-3.1-pro-preview`（前一个失败自动降级）。
-- 🐳 **Docker**：一条 `docker compose up` 起服务，Key 与配置持久化在卷里，重启不丢。
-- ⬆️ **更新**：点落后单元格更新单个，或顶部「一键更新全部」，命令输出实时回显在底部控制台。
+- 🔢 **两种视图**：卡片（每包一张，含各机器版本与状态分布条）/ 矩阵（行=包、列=机器，机器多时更紧凑）。配色一眼看出谁落后（绿=最新 / 橙=可更新 / 灰=未装 / 红=异常），侧栏可按状态、按机器过滤，支持搜索（`/` 或 `⌘K`）。
+- 📝 **Changelog**：点包名，右侧时间线展示 `已装最低版本 → 最新版本` 之间的 GitHub Release 原文（Markdown 渲染）。
+- 🍎 **Mac App**：可打包成本地 `.app`（Electron，内嵌后端），见下文「Mac App」。
+- 🐳 **Docker**：一条 `docker compose up` 起服务，配置持久化在卷里，重启不丢。
+- ⬆️ **更新**：单台更新、按包更新所有落后机器，或「全部更新」；执行前展示实际命令确认，输出实时回显在右下角「活动」面板。
 - ➕ **可扩展**：机器和包都能**在网页里增删管理**（顶部「🖥️ 机器」「📦 包」），也可继续手写 `config/config.yaml`。支持 npm / PyPI / GitHub Release。
   - 持久化：`config/config.yaml` 作初始**种子**；一旦在网页里改动机器/包，结果整组存进 `data/overrides.json`（Docker `data` 卷已持久化，重启不丢），**不回写、不破坏** `config.yaml` 的注释。想回到纯 yaml 配置，删掉 `data/overrides.json` 即可。
 
@@ -31,31 +32,22 @@ cp config/config.example.yaml config/config.yaml
 npm run dev
 #   浏览器打开 http://localhost:5173
 
-# 4.（可选）开启 AI 总结：点右上角「⚙️ 设置」，填 DeerAPI Key → 测试连接 → 保存
-#   不填也能用，只是 changelog 只展示 release 原文
+# 4.（可选）私有仓库查最新版需要 GITHUB_TOKEN：写进 .env，或已 `gh auth login` 则自动取
 ```
 
-首次进入会自动跑一轮检查（查各机器已装版本 + 各包最新版本）。之后点「↻ 刷新」重查。
+首次进入会自动跑一轮检查（查各机器已装版本 + 各包最新版本）。之后点顶栏刷新按钮重查全部，或在卡片 / 侧栏机器上单独刷新。
 
 ## 在网页里管理机器与包
 
-机器和包既可手写 `config/config.yaml`，也能直接在网页顶部增删 —— 改动整组持久化到 `data/overrides.json`，**不回写、不破坏** `config.yaml`（注释/示例原样保留）。
+机器和包既可手写 `config/config.yaml`，也能直接在网页侧栏「管理机器 / 管理包」里增删 —— 改动整组持久化到 `data/overrides.json`，**不回写、不破坏** `config.yaml`（注释/示例原样保留）。
 
-- **🖥️ 机器**：本机（`local`）固定置顶、不可删；其它机器——
-  - 点「↻ 从 SSH config 发现」自动解析 `~/.ssh/config` 的 `Host` 别名（带 HostName / User 预览），「+ 加入」即纳入；
-  - 每台机器一个**启用复选框**，停用的机器从矩阵里隐藏、不再检查；可改显示名、可删除。
-- **📦 包**：列出现有包可删；「添加包」表单填 `id / label / manager / 包名或 repo / versionCommand / updateCommand` 即新增一行，立刻并入矩阵开始检查。
+- **管理机器**：本机（`local`）固定置顶、不可删；其它机器——
+  - 点「从 ~/.ssh/config 发现」自动解析 `~/.ssh/config` 的 `Host` 别名（带 HostName / User 预览），「加入」即纳入；
+  - 每台机器一个**启用复选框**，停用的机器从面板里隐藏、不再检查；可改显示名、可删除。
+- **管理包**：列出现有包可删；「添加包」表单填 `id / label / manager / 包名或 repo / versionCommand / updateCommand` 即新增一项，立刻开始检查。
 - **持久化与回滚**：`config.yaml` 是初始**种子**；一旦在网页里改过机器/包，之后以 `data/overrides.json` 为准。想回到纯 yaml 配置，删掉 `data/overrides.json` 即可（Docker 下删卷里的同名文件）。
 
 > 注：Docker 部署时这些接口在后端容器里，改了后端代码需 `docker compose up -d --build` 重建镜像才会生效。
-
-## AI 总结（DeerAPI）
-
-点包名会抓取 `当前版本 → 最新版本` 之间的 GitHub Release 并用 AI 总结。AI 走 [DeerAPI](https://www.deerapi.com)（OpenAI 兼容网关，`https://api.deerapi.com/v1`）。
-
-- **设置方式**：右上角「⚙️ 设置」里填 API Key / Base URL / 模型降级链，「测试连接」校验后保存。Key **脱敏显示、持久化**在 `data/settings.json`（GET 不回传明文，留空保存不会覆盖已存 Key）。
-- **模型降级链**：默认 `gpt-5.5 → gpt-5.4 → gemini-3.1-pro-preview`。调用时按顺序尝试，前一个失败（限流 / 模型不存在 / 5xx）自动降到下一个；**401 鉴权失败立即停止**，不浪费配额。
-- **优先级**：`data/settings.json` 里的 Key > 环境变量 `DEERAPI_API_KEY`。
 
 ## 用 Docker 跑（推荐部署方式）
 
@@ -63,12 +55,12 @@ npm run dev
 cd ipackage
 cp config/config.example.yaml config/config.yaml   # 改成你的机器和包（之后也可在网页里增删）
 docker compose up -d --build
-#   访问 http://localhost:8787 ，在「设置」里填 DeerAPI Key（会持久化到卷）
+#   访问 http://localhost:8787
 ```
 
 **持久化**：
 - `config/` 直接挂宿主目录 —— 在宿主上改 `config.yaml` 即时生效。
-- `data` 命名卷 —— DeerAPI Key、baseUrl、模型链存这里，`docker compose down` 再 `up` 不丢。
+- `data` 命名卷 —— 网页里对机器/包的改动（`overrides.json`）存这里，`docker compose down` 再 `up` 不丢。
 
 **容器里访问远程机器（SSH）**：compose 把宿主 `~/.ssh` 挂到容器的 **`/root/.ssh`**（OpenSSH 按系统用户库 `getpwuid` 找 home，容器内 root 即 `/root`，**不认 `$HOME` 环境变量**——这是踩过的坑）。ssh 别名、`~/.ssh` 下的密钥、ProxyJump 都能命中；容器内 ssh 还会自动忽略 `UseKeychain` 等 **macOS 专属**配置项（否则 Linux 的 ssh 解析 `~/.ssh/config` 会直接报错）。注意：
 
@@ -89,7 +81,7 @@ packages:
     label: Claude Code CLI
     manager: npm                       # npm | pypi | github | custom
     npmName: "@anthropic-ai/claude-code"
-    repo: anthropics/claude-code       # 用于 AI changelog
+    repo: anthropics/claude-code       # 用于 changelog
     versionCommand: "claude --version" # 在机器上读已装版本
     versionRegex: "(\\d+\\.\\d+\\.\\d+)" # 可选，提取版本号
     updateCommand: "npm i -g @anthropic-ai/claude-code@latest"
@@ -117,6 +109,32 @@ npm run build        # 编译 server 到 dist、打包 web 到 web/dist
 npm start            # 只起后端，并托管已构建的前端，访问 http://127.0.0.1:8787
 ```
 
+## Mac App（Electron，Apple Silicon）
+
+把面板打包成本地 `ipackage.app`：后端被 esbuild 打成单文件内嵌在 Electron 主进程里（随机空闲端口、只听 `127.0.0.1`），窗口直接加载它。`desktop/` 是独立 npm 包（不在 workspaces 里，Docker 不会装 Electron）。
+
+```bash
+npm --prefix desktop install   # 首次：装 electron / @electron/packager / esbuild
+npm run app:build              # 构建 server+web，再打包 -> desktop/out/ipackage-darwin-arm64/ipackage.app
+npm run app:start              # 不打包，直接用 electron 跑（调试用）
+open desktop/out/ipackage-darwin-arm64/ipackage.app
+```
+
+- **配置与数据**：`~/Library/Application Support/ipackage/`，`config/config.yaml` + `data/overrides.json`。首次启动时若打包时仓库里有 `config/config.yaml`、`data/overrides.json`，会作为种子拷过去（已存在不覆盖）；之后与仓库互不影响。
+- **PATH**：GUI App 默认 PATH 极简，启动时会用你的登录 shell（`$SHELL -l -c`，fish/zsh/bash 均可）读出完整 PATH 合并进来，本机命令（`claude`、`npm`、`gh`…）与开发时一致。
+- **GITHUB_TOKEN**（私有仓库查最新版）：放在 `~/Library/Application Support/ipackage/config/.env`，或什么都不配——没有时会自动尝试 `gh auth token`（开发模式同样生效）。
+- **图标**：`desktop/icon.icns` 已入库；改了 `web/public/favicon.svg` 后用 `npm --prefix desktop run icon` 重新生成（需要 Google Chrome）。
+- 打包后整包做 ad-hoc 签名（免开发者账号）；不会自动拷进 `/Applications`。
+
+### 分享给别人（分享版）
+
+```bash
+npm run app:share   # -> desktop/out/ipackage-<版本>-arm64.dmg
+```
+
+- 分享版**不带你的个人配置**：首次启动只有「本机」+ 公开包（见 `desktop/share-config.yaml`），对方在「管理机器」里从自己的 `~/.ssh/config` 添加机器。
+- 只支持 Apple Silicon。未经 Apple 公证，对方首次打开会提示「Apple 无法验证…」：点「完成」→ 打开「系统设置 → 隐私与安全性」，在底部点「仍要打开」→ 再打开一次即可（之后正常双击）。或终端执行 `xattr -dr com.apple.quarantine /Applications/ipackage.app`。
+
 ## 安全边界
 
 - 服务只监听 `127.0.0.1`，不对外暴露。
@@ -127,14 +145,17 @@ npm start            # 只起后端，并托管已构建的前端，访问 http:
 
 ```
 server/   Node + Express 后端
-          ├─ ssh.ts / registry.ts / changelog.ts   查版本 / 查最新 / AI 总结
+          ├─ ssh.ts / registry.ts / changelog.ts   查版本 / 查最新 / 抓 Release
           ├─ sshConfig.ts                          解析 ~/.ssh/config 发现机器
           ├─ config.ts + overrides.ts              yaml 种子 + data/overrides.json 合并
           └─ checker.ts / index.ts                 编排 + Express 路由（含机器/包/流式更新）
 web/      React + Vite 前端
-          ├─ App.tsx + styles.css                  版本矩阵 / 更新控制台
-          ├─ MachinesModal.tsx / PackagesModal.tsx 网页里管理机器与包
-          └─ SettingsModal.tsx                     DeerAPI 设置
+          ├─ App.tsx + styles.css                  外壳 / 状态编排 / 设计令牌（深浅色）
+          ├─ Sidebar / PackageGrid / Matrix        侧栏过滤、卡片视图、矩阵视图
+          ├─ ChangelogDrawer + Markdown            Release 时间线
+          ├─ ActivityPanel / feedback.tsx          更新日志、确认框、Toast
+          └─ MachinesModal.tsx / PackagesModal.tsx 管理机器与包
+desktop/  Mac App（Electron 壳，内嵌打包后的后端）
 config/   机器与包配置（config.yaml 本地，example 入库）
-data/     运行期持久化：settings.json / overrides.json（不入库，Docker 卷）
+data/     运行期持久化：overrides.json（不入库，Docker 卷）
 ```

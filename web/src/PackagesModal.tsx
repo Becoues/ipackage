@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Modal } from "./ui";
+import { Icon } from "./icons";
 import { savePackages } from "./api";
 import type { PackageDef } from "./types";
 
@@ -85,13 +87,20 @@ export default function PackagesModal({
   }
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
-        <div className="drawer-head">
-          <h3>📦 包管理</h3>
-          <button onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
+    <Modal
+      title="包管理"
+      icon="package"
+      wide
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose}>取消</button>
+          <button className="primary" onClick={onSave} disabled={saving}>
+            {saving ? "保存中…" : "保存并刷新"}
+          </button>
+        </>
+      }
+    >
           <div className="mlist">
             {packages.length === 0 && <p className="muted-note">还没有包。</p>}
             {packages.map((p) => (
@@ -104,8 +113,8 @@ export default function PackagesModal({
                     {p.npmName || p.pypiName || p.repo || ""}
                   </small>
                 </div>
-                <button className="mdel" onClick={() => remove(p.id)}>
-                  删除
+                <button className="btn-icon danger" onClick={() => remove(p.id)} title="删除">
+                  <Icon name="trash" size={14} />
                 </button>
               </div>
             ))}
@@ -196,19 +205,14 @@ export default function PackagesModal({
               </label>
             </div>
             <div className="addbox-foot">
-              <button onClick={addDraft}>+ 加入列表</button>
+              <button onClick={addDraft}>
+                <Icon name="plus" size={14} />
+                加入列表
+              </button>
             </div>
           </div>
 
           {msg && <p className={msg.ok ? "ok-msg" : "err-msg"}>{msg.text}</p>}
-        </div>
-        <div className="modal-foot">
-          <button onClick={onClose}>取消</button>
-          <button className="primary" onClick={onSave} disabled={saving}>
-            {saving ? "保存中…" : "保存并刷新"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

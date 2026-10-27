@@ -1,22 +1,15 @@
-import "dotenv/config";
+import "./env";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
 import type { Response } from "express";
 import { loadConfig, usingExampleConfig } from "./config";
-import { refresh, store, effectiveCommand } from "./checker";
+import { refresh, store, effectiveCommand, parseInstalled, compare } from "./checker";
 import { buildChangelog } from "./changelog";
 import { spawnOn, runOn } from "./ssh";
 import { discoverSshHosts } from "./sshConfig";
 import { saveMachines, savePackages } from "./overrides";
 import type { Machine, PackageDef } from "./types";
-import {
-  publicSettings,
-  saveSettings,
-  loadSettings,
-  effectiveApiKey,
-  isMasked,
-} from "./settings";
 
 const PORT = Number(process.env.PORT || 8787);
 // 原生跑默认只听 127.0.0.1（不暴露局域网）；容器里需 0.0.0.0 才能让 docker 端口映射生效，
@@ -36,7 +29,6 @@ app.get("/api/config", (_req, res) => {
     machines: cfg.machines,
     packages: cfg.packages,
     usingExampleConfig: usingExampleConfig(),
-    aiEnabled: !!effectiveApiKey(),
   });
 });
 
@@ -128,54 +120,6 @@ app.post("/api/packages", (req, res) => {
   }
 });
 
-// ---- AI / DeerAPI 设置（持久化在 data/settings.json）----
-app.get("/api/settings", (_req, res) => {
-  res.json(publicSettings());
-});
-
-app.post("/api/settings", (req, res) => {
-  try {
-    saveSettings(req.body || {});
-    res.json(publicSettings());
-  } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
-  }
-});
-
-app.post("/api/settings/test-connection", async (req, res) => {
-  const body = req.body || {};
-  const stored = loadSettings();
-  const apiKey =
-    typeof body.apiKey === "string" && body.apiKey && !isMasked(body.apiKey)
-      ? body.apiKey.trim()
-      : effectiveApiKey();
-  const baseUrl = (body.baseUrl?.trim() || stored.baseUrl).replace(/\/$/, "");
-  const model =
-    (Array.isArray(body.models) && body.models[0]) || stored.models[0];
-  if (!apiKey) return res.json({ ok: false, error: "未配置 API Key" });
-  try {
-    const r = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1,
-        messages: [{ role: "user", content: "Hi" }],
-      }),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      return res.json({ ok: false, error: `${r.status} ${t.slice(0, 200)}` });
-    }
-    res.json({ ok: true, model });
-  } catch (e) {
-    res.json({ ok: false, error: String(e) });
-  }
-});
-
 app.get("/api/status", (_req, res) => {
   res.json({ cells: store.all() });
 });
@@ -235,16 +179,15 @@ function streamUpdate(
       let installed: string | null = null;
       try {
         const r = await runOn(host, effectiveCommand(pkg, host, "versionCommand"), 20000);
-        const re = pkg.versionRegex ? new RegExp(pkg.versionRegex) : /(\d+\.\d+\.\d+[\w.-]*)/;
-        const m = (r.stdout + "\n" + r.stderr).match(re);
-        installed = m ? m[1] || m[0] : null;
+        installed = parseInstalled(r.stdout + "\n" + r.stderr, pkg);
       } catch {
         /* ignore */
       }
       if (installed) {
         const cell = store.get(host, pkg.id);
         cell.installed = installed;
-        cell.status = cell.latest && installed >= cell.latest ? "uptodate" : cell.status;
+        cell.status = compare(installed, cell.latest);
+        cell.error = undefined;
         store.set(cell);
       }
       writeLine(res, { type: "done", machine: host, packageId: pkg.id, code, installed });
@@ -285,8 +228,8 @@ app.post("/api/update-all", async (req, res) => {
   res.end();
 });
 
-// 生产模式下托管已构建的前端
-const webDist = path.resolve(__dirname, "..", "..", "web", "dist");
+// 生产模式下托管已构建的前端（Mac App 通过 IPACKAGE_WEB_DIST 指向打包进 .app 的副本）
+const webDist = process.env.IPACKAGE_WEB_DIST || path.resolve(__dirname, "..", "..", "web", "dist");
 app.use(express.static(webDist));
 
 app.listen(PORT, HOST, () => {

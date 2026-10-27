@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Modal } from "./ui";
+import { Icon } from "./icons";
 import { getSshHosts, saveMachines } from "./api";
 import type { Machine, SshHost } from "./types";
 
@@ -60,13 +62,19 @@ export default function MachinesModal({
   const addable = (discovered || []).filter((h) => !hasHost(h.host));
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="drawer-head">
-          <h3>🖥️ 机器管理</h3>
-          <button onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
+    <Modal
+      title="机器管理"
+      icon="server"
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose}>取消</button>
+          <button className="primary" onClick={onSave} disabled={saving}>
+            {saving ? "保存中…" : "保存并刷新"}
+          </button>
+        </>
+      }
+    >
           <div className="mlist">
             {machines.map((m) => {
               const isLocal = m.host === "local";
@@ -89,8 +97,8 @@ export default function MachinesModal({
                   {isLocal ? (
                     <span className="mtag">本机</span>
                   ) : (
-                    <button className="mdel" onClick={() => remove(m.host)}>
-                      删除
+                    <button className="btn-icon danger" onClick={() => remove(m.host)} title="删除">
+                      <Icon name="trash" size={14} />
                     </button>
                   )}
                 </div>
@@ -100,7 +108,8 @@ export default function MachinesModal({
 
           <div className="discover">
             <button onClick={discover} disabled={discovering}>
-              {discovering ? "发现中…" : "↻ 从 SSH config 发现"}
+              <Icon name="refresh" size={14} className={discovering ? "spin" : ""} />
+              {discovering ? "发现中…" : "从 ~/.ssh/config 发现"}
             </button>
             {discovered && (
               <div className="discover-list">
@@ -121,7 +130,10 @@ export default function MachinesModal({
                             .join("") || "—"}
                         </small>
                       </div>
-                      <button onClick={() => add(h.host)}>+ 加入</button>
+                      <button className="btn-sm" onClick={() => add(h.host)}>
+                        <Icon name="plus" size={13} />
+                        加入
+                      </button>
                     </div>
                   ))
                 )}
@@ -130,14 +142,6 @@ export default function MachinesModal({
           </div>
 
           {msg && <p className={msg.ok ? "ok-msg" : "err-msg"}>{msg.text}</p>}
-        </div>
-        <div className="modal-foot">
-          <button onClick={onClose}>取消</button>
-          <button className="primary" onClick={onSave} disabled={saving}>
-            {saving ? "保存中…" : "保存并刷新"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
